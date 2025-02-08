@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #4CAF50;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid black;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Admin Dashboard</h1>
+    <button onclick="fetchTransactions()">Load Transactions</button>
+    <table>
+        <thead>
+            <tr>
+                <th>Donor</th>
+                <th>Amount (ETH)</th>
+                <th>Purpose</th>
+                <th>Timestamp</th>
+            </tr>
+        </thead>
+        <tbody id="transactions"></tbody>
+    </table>
+
+    <script>
+
+        let web3;
+        let contract;
+        const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Ensure correct deployed address
+        const abi = [
+            {
+                "inputs": [],
+                "stateMutability": "nonpayable",
+                "type": "constructor"
+            },
+            {
+                "anonymous": false,
+                "inputs": [
+                    {
+                        "indexed": true,
+                        "internalType": "address",
+                        "name": "donor",
+                        "type": "address"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    },
+                    {
+                        "indexed": false,
+                        "internalType": "string",
+                        "name": "purpose",
+                        "type": "string"
+                    }
+                ],
+                "name": "DonationReceived",
+                "type": "event"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "string",
+                        "name": "_purpose",
+                        "type": "string"
+                    }
+                ],
+                "name": "donate",
+                "outputs": [],
+                "stateMutability": "payable",
+                "type": "function"
+            },
+            {
+                "inputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "name": "donations",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "donor",
+                        "type": "address"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "amount",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "uint256",
+                        "name": "timestamp",
+                        "type": "uint256"
+                    },
+                    {
+                        "internalType": "string",
+                        "name": "purpose",
+                        "type": "string"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getAllDonations",
+                "outputs": [
+                    {
+                        "components": [
+                            {
+                                "internalType": "address",
+                                "name": "donor",
+                                "type": "address"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "amount",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "uint256",
+                                "name": "timestamp",
+                                "type": "uint256"
+                            },
+                            {
+                                "internalType": "string",
+                                "name": "purpose",
+                                "type": "string"
+                            }
+                        ],
+                        "internalType": "struct CharityDonation.Donation[]",
+                        "name": "",
+                        "type": "tuple[]"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getContractBalance",
+                "outputs": [
+                    {
+                        "internalType": "uint256",
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "owner",
+                "outputs": [
+                    {
+                        "internalType": "address",
+                        "name": "",
+                        "type": "address"
+                    }
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+
+        async function fetchTransactions() {
+            if (window.ethereum) {
+                web3 = new Web3(window.ethereum);
+                contract = new web3.eth.Contract(abi, contractAddress);
+
+                try {
+                    const transactions = await contract.methods.getAllDonations().call();
+                    const tableBody = document.getElementById("transactions");
+                    tableBody.innerHTML = "";
+
+                    transactions.forEach(tx => {
+                        const date = new Date(tx.timestamp * 1000).toLocaleString();
+                        const row = `<tr>
+                    <td>${tx.donor}</td>
+                    <td>${web3.utils.fromWei(tx.amount, "ether")} ETH</td>
+                    <td>${tx.purpose}</td>
+                    <td>${date}</td>
+                </tr>`;
+                        tableBody.innerHTML += row;
+                    });
+                } catch (error) {
+                    console.error("Error fetching transactions:", error);
+                    alert("Failed to load transactions.");
+                }
+            } else {
+                alert("Please connect to MetaMask.");
+            }
+        }
+
+    </script>
+
+</body>
+
+</html>
